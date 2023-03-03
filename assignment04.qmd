@@ -6,7 +6,40 @@ editor: visual
 warning: false
 ---
 
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(sf)
+library(tigris)
+```
+
 ## Graph One
+
+Capital Bikeshare January 2023
+
+```{r}
+
+#Read in Capital Bikeshare data
+cabi <- read.csv(file = '202301-capitalbikeshare-tripdata.csv')
+
+start_station <- st_as_sf(cabi, coords = c("start_lng", "start_lat")) %>% 
+st_set_crs(value = 4326)
+
+dc <- states(progress_bar = FALSE) %>%
+ filter(STUSPS == "DC") 
+
+ggplot() +
+ geom_sf(data = dc) +
+ geom_sf(data = start_station,
+         aes(color = member_casual)) +
+ theme_void()
+
+
+
+```
+
+
 
 ## Graph Two
 
@@ -14,17 +47,3 @@ warning: false
 
 ## Graph Four
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
-```
-
-You can add options to executable code like this
-
-```{r}
-#| echo: false
-2 * 2
-```
-
-The `echo: false` option disables the printing of code (only output is displayed).
