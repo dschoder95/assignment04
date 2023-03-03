@@ -33,6 +33,7 @@ ggplot() +
  geom_sf(data = dc) +
  geom_sf(data = start_station,
          aes(color = member_casual)) +
+  labs(title = "Capital Bikeshare Start Trips (Member Vs. Casual)") +
  theme_void()
 
 
