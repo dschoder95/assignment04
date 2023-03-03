@@ -8,6 +8,7 @@ warning: false
 
 ```{r}
 library(tidyverse)
+library(ggplot2)
 ```
 
 ## Graph One
@@ -15,7 +16,10 @@ library(tidyverse)
 Capital Bikeshare January 2023
 
 ```{r}
+
+#Read in Capital Bikeshare data
 cabi <- read.csv(file = '202301-capitalbikeshare-tripdata.csv')
+
 ```
 
 
