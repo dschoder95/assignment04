@@ -44,6 +44,17 @@ ggplot() +
 
 ## Graph Two
 
+```{r}
+# Put end time variable into date format and extract day of the week
+end_time <- ymd_hms(cabi$ended_at)
+day <- wday(end_time)
+
+cabi %>% 
+  ggplot() +
+  geom_bar(mapping = aes(x = day))
+
+```
+
 ## Graph Three
 
 ## Graph Four
