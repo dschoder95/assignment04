@@ -12,6 +12,8 @@ library(ggplot2)
 library(lubridate)
 library(sf)
 library(tigris)
+library(dplyr)
+library(forcats)
 ```
 
 ## Graph One
@@ -50,21 +52,27 @@ ggplot() +
 
 
 
-## Graph Two
+## Total Bikeshare Trips by Day of the Week
+
+According to [Capital Bikeshare data](https://capitalbikeshare.com/system-data), the total bikeshare trips in January 2023 were highest on Mondays and Tuesdays, and similar all other days of the week. 
 
 ```{r}
 # Put end time variable into date format and extract day of the week
 end_time <- ymd_hms(cabi$ended_at)
 day <- wday(end_time)
 
+
 # Graph Total Bikeshare Trips by Day of the Week
 cabi %>% 
    ggplot() +
    geom_bar(mapping = aes(x = day)) +
    labs(title = "Total Bikeshare Trips by Day of the Week", subtitle = "Capital Bikeshare, January 2023", caption = "Data Source: Capital Bikeshare") +
-   xlab("Day of the Week") +
-   ylab("Total Bikeshare Trips") +
-  theme_void()
+  xlab("Day of the Week") +
+  ylab("Total Trips in January") +
+  scale_x_discrete(limit = c(1, 2, 3, 4, 5, 6, 7), 
+                   labels = c("Sunday","Monday","Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+
+
 
 ```
 
