@@ -3,11 +3,13 @@ title: "Assignment 4"
 format: html
 editor: visual
 ---
-_Kelly Primrose in collaboration with Diana Schroder_
+
+*Kelly Primrose in collaboration with Diana Schroder*
 
 #Library Addition & Data Importing
+
 ```{r}
-#| echo:false
+#| echo: false
 
 library(tidyverse)
 library(tinytex)
@@ -20,9 +22,10 @@ cabi <- read.csv("202301-capitalbikeshare-tripdata.csv")
 
 ```
 
-We decided to use the Capital Bikeshare ridership data from January 2023 to examine the paterns of CaBi riders at various points in time. 
+We decided to use the Capital Bikeshare ridership data from January 2023 to examine the paterns of CaBi riders at various points in time.
 
 *Graph 1: Origin Points of Rides in DC*
+
 ```{r}
 start_station <- st_as_sf(cabi, coords = c("start_lng", "start_lat"))%>% 
   st_set_crs(value = 4326)
@@ -36,31 +39,33 @@ ggplot() +
          aes(color = member_casual)) +
  theme_void()+
   labs(title = "Origin Points of Rides in DC", 
-       subtitle = "Majority of ridership is by members",
+       subtitle = "Majority of Rides Happen in DC",
        caption = "Data source: Capitol Bikeshare Trip History Data",
        color = "Capitol Bikeshare Membership Status")
 
 ggsave(filename = "GG1_DCOrigin.png")
 ```
 
-
 *Graph 2: Ridership Across DMV by Day of Week*
+
 ```{r}
 # Put end time variable into date format and extract day of the week
 end_time <- ymd_hms(cabi$ended_at)
 day <- wday(end_time)
+start_time <- ymd_hms(cabi$started_at)
 cabi %>% 
   ggplot() +
   geom_bar(mapping = aes(x = day))+
   labs(title = "Ridership By Day of Week", 
-       caption = "Data publicly available on the Capital Bikeshare website.")+
+       caption = "Data source: Capitol Bikeshare Trip History Data")+
   xlab("Day of week")+
   ylab("Number of rides taken")
 
 ggsave(filename = "GG2_DayBar.png")
 ```
 
-*Graph 3: Top 10 Most Popular Destination Stations
+\*Graph 3: Top 10 Most Popular Destination Stations
+
 ```{r}
 
 #replacing empty instances of end_station_name with "Abandoned bike", as these unreturned bikes were likely left somewhere. 
@@ -76,25 +81,32 @@ cabi%>%
   filter(count > 1630)%>%
   ggplot() +
   geom_count(mapping = aes(x=end_station_name, y = count))+
+  labs(title = "Top 10 Destinations By Rider End Points",
+       subtitle = "Unreturned Bikes Lead Over Any Destination", 
+       caption = "Data source: Capitol Bikeshare Trip History Data",
+       n = "Riders Who Stopped at this Destination")+
+  ylab("Count")
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 ggsave(filename = "populardests.png")
-
+ungroup()
 ```
 
 *Graph 4: Trip Duration by Members Versus Casual Riders*
 
 ```{r}
-end_time <- ymd_hms(cabi$ended_at)
-start_time <- ymd_hms(cabi$started_at)
+#I'm creating a variable for ride duration so I can compare duration for members vs casuals
+cabi <- cabi%>%
+  mutate(duration = as.numeric(difftime(end_time, start_time, units = "mins")))
 
-cabiduration <- data.frame(start_time, end_time)
 
-cabiduration%>%
-  difftime(end_time, start_time, units = "minutes")
 
-ended_at <- as.POSIXct.Date("ended_at")
-  mutate(duration = difftime(started_at, ended_at, units = "minutes"))
+cabi%>%
+  ggplot(aes(x=duration, fill = member_casual)) +
+  geom_area(stat = "bin", bins = 10)+
+  geom_vline(xintercept = mean(cabi$duration, na.rm = TRUE), color = 'gray', lty = 'dashed', lwd = 1)+
+  theme_classic()+
+  xlim(0, 250)
+
 
 ```
-
