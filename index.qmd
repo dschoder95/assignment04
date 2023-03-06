@@ -101,6 +101,7 @@ If commuters are in fact the driving force behind CaBi, then we would expect to 
 cabi <- cabi%>%
   mutate(end_station_name = ifelse(end_station_name == "", "Abandoned bike", end_station_name))
 
+
 #grouping by end station and counting in descending order to see which stations are most popular destinations
 cabi%>%
   group_by(end_station_name)%>%
@@ -114,6 +115,7 @@ cabi%>%
        caption = "Data source: Capitol Bikeshare Trip History Data")+
   ylab("Number of Riders")+
   xlab("Destination")+
+  annotate("text", x = 6.5, y = 8000, label = "Abandoned bikes comprise the top destination") +
  theme(axis.text.x = element_text(angle = 15))
 
 ggsave(filename = "populardests.png")
