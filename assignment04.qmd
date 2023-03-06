@@ -50,11 +50,9 @@ ggplot() +
 
 ```
 
-
-
 ## Total Bikeshare Trips by Day of the Week
 
-According to [Capital Bikeshare data](https://capitalbikeshare.com/system-data), the total bikeshare trips in January 2023 were highest on Mondays and Tuesdays, and similar all other days of the week. 
+According to [Capital Bikeshare data](https://capitalbikeshare.com/system-data), the total bikeshare trips in January 2023 were highest on Mondays and Tuesdays, and similar all other days of the week.
 
 ```{r}
 # Put end time variable into date format and extract day of the week
@@ -76,7 +74,48 @@ cabi %>%
 
 ```
 
-## Graph Three
+## Graph Three: Top 10 Most Popular Destination Stations
 
-## Graph Four
+```{r}
 
+#replacing empty instances of end_station_name with "Abandoned bike", as these unreturned bikes were likely left somewhere.
+
+cabi <- cabi%>%
+  mutate(end_station_name = ifelse(end_station_name == "", "Abandoned bike", end_station_name))
+
+#grouping by end station and counting in descending order to see which stations are most popular destinations
+cabi%>%
+  group_by(end_station_name)%>%
+  summarize(count = n())%>%
+  arrange(desc(count))%>%
+  filter(count > 1630)%>%
+  ggplot() +
+  geom_count(mapping = aes(x=end_station_name, y = count))+
+  labs(title = "Top 10 Destinations By Rider End Points",
+       subtitle = "Unreturned Bikes Lead Over Any Destination", 
+       caption = "Data source: Capitol Bikeshare Trip History Data",
+       n = "Riders Who Stopped at this Destination")+
+  ylab("Count")
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+ggsave(filename = "populardests.png")
+ungroup()
+```
+## Graph Four: Trip Duration by Members Versus Casual Riders*
+
+```{r}
+#I'm creating a variable for ride duration so I can compare duration for members vs casuals
+cabi <- cabi%>%
+  mutate(duration = as.numeric(difftime(end_time, start_time, units = "mins")))
+
+
+
+cabi%>%
+  ggplot(aes(x=duration, fill = member_casual)) +
+  geom_area(stat = "bin", bins = 10)+
+  geom_vline(xintercept = mean(cabi$duration, na.rm = TRUE), color = 'gray', lty = 'dashed', lwd = 1)+
+  theme_classic()+
+  xlim(0, 250)
+
+
+```
