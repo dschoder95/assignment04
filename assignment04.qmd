@@ -16,7 +16,7 @@ library(dplyr)
 library(forcats)
 ```
 
-## Graph One
+## Member and Casual Trips in January 2023
 
 [Capital Bikeshare data](https://capitalbikeshare.com/system-data) shows that both casual users and members began their trips throughout the Capital Bikeshare system in January 2023, including in DC, Maryland, and Virginia.
 
