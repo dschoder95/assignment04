@@ -1,0 +1,140 @@
+---
+title: "Member and Casual Bikeshare Trips in January 2023"
+subtitle: "Using Capital Bikeshare (CaBi) Ridership Data To Understand Transit Policies for DMV Commuters"
+author: "Kelly Primrose and Diana Schoder"
+format: html
+editor: visual
+warning: false
+---
+
+```{r}
+#| echo: false
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(sf)
+library(tigris)
+library(dplyr)
+library(forcats)
+library(ggrepel)
+
+```
+
+As the DC Government moves to make MetroBus free for DC residents, and as employers grasp for incentives to entice workers back to the office, we set out to understand how DMV commmuters utilize their most popular bikesharing service, Capital Bikeshare. We are especially curious about the following questions:
+
+1.  Is CaBi widely used outside of DC, and is it relevant to MD and VA transportation policy?
+
+2.  Are there patterns to what days CaBi is predominantly used on?
+
+3.  Are some destinations more popular biking destinations than others?
+
+4.  Do CaBi members ride differently than non-members (who are less likely to be commuters)?
+
+We have produced a data visualization for each of these questions showing the results from the data.
+
+## Viz One: Member and Casual Trips in January 2023
+
+[Capital Bikeshare data](https://capitalbikeshare.com/system-data) shows that both casual users and members began their trips throughout the Capital Bikeshare system in January 2023, including in DC, Maryland, and Virginia. Although there is clearly a clustering of ridership in central DC, the usage in the suburbs of Maryland and Virginia is still significant, and may warrant further study by policymakers in those regions. It does seem as though CaBi ridership roughly traces the outer spokes of the Red, Orange, and Green metro lines, so we might see a correlation between business days and ridership numbers as commuters make use of the bikes to get to and from the metro.
+
+```{r}
+
+#Read in Capital Bikeshare data
+cabi <- read.csv(file = '202301-capitalbikeshare-tripdata.csv')
+
+start_station <- st_as_sf(cabi, coords = c("start_lng", "start_lat")) %>% 
+st_set_crs(value = 4326)
+
+dc <- states(progress_bar = FALSE) %>%
+ filter(STUSPS == "DC") 
+
+md <- counties("MD", progress_bar = FALSE) %>%
+  filter(COUNTYFP == "031" | COUNTYFP == "033") 
+
+va <- counties("VA", progress_bar = FALSE) %>%
+  filter(COUNTYFP == "013" |COUNTYFP == "059" | COUNTYFP == "510")  
+
+ggplot() +
+  geom_sf(data = dc) +
+   geom_sf(data = md) +
+   geom_sf(data = va) +
+  geom_sf(data = start_station,
+          aes(color = member_casual)) +
+   labs(title = "Member and Casual Trips in January 2023", subtitle = "Capital Bikeshare Starting Stations", caption = "Data Source: Capital Bikeshare", fill = "User Types") +
+  theme_void()
+
+
+
+```
+
+## Viz Two: Total Bikeshare Trips by Day of the Week
+
+According to [Capital Bikeshare data](https://capitalbikeshare.com/system-data), the total bikeshare trips in January 2023 were highest on Mondays and Tuesdays, and similar all other days of the week. This is one piece of evidence supporting our theory that commuters are a driving consumer base for CaBi. However, it also indicates that non-commuters are a significant part of the base, too, as demonstrated by the high levels of weekend ridership.
+
+```{r}
+# Put end time variable into date format and extract day of the week
+end_time <- ymd_hms(cabi$ended_at)
+day <- wday(end_time)
+
+
+# Graph Total Bikeshare Trips by Day of the Week
+cabi %>% 
+   ggplot() +
+   geom_bar(mapping = aes(x = day)) +
+   labs(title = "Total Bikeshare Trips by Day of the Week", subtitle = "Capital Bikeshare, January 2023", caption = "Data Source: Capital Bikeshare") +
+  xlab("Day of the Week") +
+  ylab("Total Trips in January") +
+  scale_x_discrete(limit = c(1, 2, 3, 4, 5, 6, 7), 
+                   labels = c("Sunday","Monday","Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+
+
+
+```
+
+## Viz Three: Top 10 Most Popular Destination Stations
+
+If commuters are in fact the driving force behind CaBi, then we would expect to see a strong lean towards metro stations among the top 10 Destinations for CaBi riders. Surprisingly, empty values were by far the most popular value in the destination field. This indicates that perhaps CaBi hubs are not widely dispersed enough, as our guess is that these bikes were left somewhere convenient for the rider that didn't come with an existing CaBi stand. Thankfully, our theory got a bit of a boost from the second most popular destination, which turned out to be Union Station. Yet, numbers 3 and 4 proved to be relatively far away from stations, so this theory will need further investigation.
+
+```{r}
+
+#replacing empty instances of end_station_name with "Abandoned bike", as these unreturned bikes were likely left somewhere.
+
+cabi <- cabi%>%
+  mutate(end_station_name = ifelse(end_station_name == "", "Abandoned bike", end_station_name))
+
+#grouping by end station and counting in descending order to see which stations are most popular destinations
+cabi%>%
+  group_by(end_station_name)%>%
+  summarize(count = n())%>%
+  arrange(desc(count))%>%
+  filter(count > 1630)%>%
+  ggplot() +
+  geom_count(mapping = aes(x=end_station_name, y = count))+
+  labs(title = "Top 10 Destinations By Rider End Points",
+       subtitle = "Unreturned Bikes Lead Over Any Destination", 
+       caption = "Data source: Capitol Bikeshare Trip History Data")+
+  ylab("Number of Riders")+
+  xlab("Destination")+
+ theme(axis.text.x = element_text(angle = 15))
+
+ggsave(filename = "populardests.png")
+
+```
+
+## Viz Four: Trip Duration by Members Versus Casual Riders
+
+Finally, we wanted to see if having a CaBi membership changes the duration of trips, thinking that commuter-members might have longer trips than casual users, who would likely not be biking the full distance to work. And, because CaBi is a pay-to-use service, casual users might limit their time to avoid higher fares. However, we did not find much of a difference, which could mean that the company's pricing structure is fair enough that users don't feel a strong pressure to self-regulate. The average trip duration was about 20 minutes, which is much higher than we had initially expected. Additionally, casual users outweigh members at every distance point, which means that commuting is likely not a strong factor in trip duration.
+
+```{r}
+#I'm creating a variable for ride duration so I can compare duration for members vs casuals
+cabi <- cabi%>%
+  mutate(duration = as.numeric(difftime(ended_at, started_at, units = "mins")))
+
+cabi%>%
+  ggplot(aes(x=duration, fill = member_casual)) +
+  geom_area(stat = "bin", bins = 10)+
+  geom_vline(xintercept = mean(cabi$duration, na.rm = TRUE), color = 'gray', lty = 'dashed', lwd = 1)+
+  theme_classic()+
+  xlim(0, 250)
+
+
+```
